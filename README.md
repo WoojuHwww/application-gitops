@@ -19,19 +19,19 @@
 
 ## 🏗️ 전체 아키텍처
 
-
+~~~text
 [ GitHub ]
-↓ (Push / PR)
+    ↓ (Push / PR)
 [ GitHub Actions ]
-↓ (CI/CD)
+    ↓ (CI/CD)
 [ ECR (Docker Image) ]
-↓
+    ↓
 [ ArgoCD ]
-↓
+    ↓
 [ EKS Cluster ]
-↓
+    ↓
 [ MSA Services (Pod) ]
-
+~~~
 
 ---
 
@@ -57,31 +57,31 @@
 
 ## 📁 프로젝트 구조
 
-
+~~~text
 team_project_msa-main/
 │
-├── terraform/ # 인프라 코드
-│ ├── environments/
-│ └── modules/
+├── terraform/                # 인프라 코드
+│   ├── environments/
+│   └── modules/
 │
-├── msa/ # MSA 서비스
-│ ├── apigateway/
-│ ├── member/
-│ ├── order/
-│ └── product/
+├── msa/                      # MSA 서비스
+│   ├── apigateway/
+│   ├── member/
+│   ├── order/
+│   └── product/
 │
-├── k8s/ # Kubernetes YAML
-│ ├── deployment/
-│ ├── service/
-│ └── ingress/
+├── k8s/                      # Kubernetes YAML
+│   ├── deployment/
+│   ├── service/
+│   └── ingress/
 │
-├── argocd/ # ArgoCD 설정
-│ └── applications/
+├── argocd/                   # ArgoCD 설정
+│   └── applications/
 │
-├── .github/workflows/ # GitHub Actions CI/CD
+├── .github/workflows/        # GitHub Actions CI/CD
 │
 └── README.md
-
+~~~
 
 ---
 
@@ -148,7 +148,7 @@ team_project_msa-main/
 ## 🧩 MSA 서비스 구성
 
 | 서비스 | 역할 |
-|------|------|
+|--------|------|
 | API Gateway | 외부 요청 라우팅 |
 | Member | 사용자 관리 |
 | Order | 주문 처리 |
@@ -158,33 +158,52 @@ team_project_msa-main/
 
 ## 🚀 배포 흐름
 
-```bash
+~~~text
 1. 코드 수정 후 Push
 2. GitHub Actions 실행
 3. Docker Image Build & Push (ECR)
 4. ArgoCD Sync
 5. Kubernetes 배포 완료
-⚠️ 트러블슈팅 경험
-❗ CSS 적용 안됨 문제
-원인: 상대경로 사용 (assets/style.css)
-해결: 절대경로로 변경 (/assets/style.css)
-❗ EKS 노드 인식 안됨
-원인: IAM Role / SSM 설정 문제
-해결: Instance Role 및 정책 재설정
-❗ Terraform Destroy 동작 안됨
-원인: Remote State 미사용
-해결: S3 + DynamoDB Backend 구성
-📈 프로젝트 성과
-인프라 자동화 (Terraform)
-배포 자동화 (GitHub Actions + ArgoCD)
-GitOps 기반 운영 환경 구축
-MSA 구조 서비스 배포 성공
-🔮 향후 개선 방향
-Helm Chart 적용
-HPA (Auto Scaling)
-Observability (Prometheus + Grafana)
-서비스 메시 (Istio)
-👨‍💻 팀 구성
-Backend: 3명
-Frontend: 1명
-Infra(System): 1명
+~~~
+
+---
+
+## ⚠️ 트러블슈팅 경험
+
+### ❗ CSS 적용 안됨 문제
+- 원인: 상대경로 사용 (`assets/style.css`)
+- 해결: 절대경로로 변경 (`/assets/style.css`)
+
+### ❗ EKS 노드 인식 안됨
+- 원인: IAM Role / SSM 설정 문제
+- 해결: Instance Role 및 정책 재설정
+
+### ❗ Terraform Destroy 동작 안됨
+- 원인: Remote State 미사용
+- 해결: S3 + DynamoDB Backend 구성
+
+---
+
+## 📈 프로젝트 성과
+
+- 인프라 자동화 (Terraform)
+- 배포 자동화 (GitHub Actions + ArgoCD)
+- GitOps 기반 운영 환경 구축
+- MSA 구조 서비스 배포 성공
+
+---
+
+## 🔮 향후 개선 방향
+
+- Helm Chart 적용
+- HPA (Auto Scaling)
+- Observability (Prometheus + Grafana)
+- 서비스 메시 (Istio)
+
+---
+
+## 👨‍💻 팀 구성
+
+- Backend: 3명
+- Frontend: 1명
+- Infra(System): 1명
