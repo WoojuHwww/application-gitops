@@ -35,21 +35,9 @@ jobs:
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.0/cert-manager.yaml
           kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/aws/deploy.yaml
           kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+          kubectl apply -k https://github.com/kubernetes/kube-state-metrics/examples/standard
           kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
           kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml  --server-side --force-conflicts
-
-      # S3 upload용 user 생성을 위한 secret
-      - name: Create aws-secret
-        env:
-          APP_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          APP_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: |
-          kubectl create secret generic aws-secret \
-            --from-literal=AWS_ACCESS_KEY_ID="${APP_ACCESS_KEY_ID}" \
-            --from-literal=AWS_SECRET_ACCESS_KEY="${APP_SECRET_ACCESS_KEY}" \
-            --from-literal=AWS_REGION=ap-northeast-2 \
-            -n soldesk \
-            --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Create my-app-secrets
         env:
@@ -61,6 +49,19 @@ jobs:
           kubectl create secret generic my-app-secrets \
             --from-literal=DB_HOST="${DB_HOST}" \
             --from-literal=DB_PW="${DB_PW}" \
+            -n soldesk \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      # S3 upload용 user 생성을 위한 secret
+      - name: Create aws-secret
+        env:
+          APP_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          APP_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          kubectl create secret generic aws-secret \
+            --from-literal=AWS_ACCESS_KEY_ID="${APP_ACCESS_KEY_ID}" \
+            --from-literal=AWS_SECRET_ACCESS_KEY="${APP_SECRET_ACCESS_KEY}" \
+            --from-literal=AWS_REGION=ap-northeast-2 \
             -n soldesk \
             --dry-run=client -o yaml | kubectl apply -f -
 
