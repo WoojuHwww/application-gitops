@@ -23,7 +23,7 @@ spec:
           ports:
             - containerPort: 8080
           resources:
-            # 컨테이너가 사용할수 있는 리소스의 최대치
+            # 컨테이너가 사용할수 있는 리소스의 최대치 
             limits:
               cpu: "1"
               memory: "500Mi"

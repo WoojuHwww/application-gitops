@@ -43,7 +43,7 @@ spec:
                 secretKeyRef:
                   name: my-app-secrets
                   key: DB_PW
-          # 컨테이너 상태 확인 
+          # 컨테이너 상태 확인  
 
           readinessProbe:
             httpGet:
