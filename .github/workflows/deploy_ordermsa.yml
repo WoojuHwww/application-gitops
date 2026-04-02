@@ -1,0 +1,224 @@
+name: deploy order order-backend
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+env:
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  REPO: ${{ vars.REPO }}
+  BRANCH: ${{ vars.BRANCH }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: write
+
+    steps:
+      - name: checkout github
+        uses: actions/checkout@v4
+
+      # 현재 커밋 SHA 앞 7자리로 IMAGE_TAG 생성
+      - name: Create IMAGE_TAG with GITHUB_SHA
+        id: image_tag
+        run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: configure aws
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::398875891485:role/github-actions-terraform-role
+          aws-region: ap-northeast-2
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Detect changed services
+        if: github.event_name == 'push'
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            gateway:
+              - 'msa/apigateway/**'
+            member:
+              - 'msa/member/**'
+            ordering:
+              - 'msa/ordering/**'
+            product:
+              - 'msa/product/**'
+            frontend:
+              - 'msa/frontend/**'
+
+      # 변경 없으면 종료
+      - name: stop if no service changed
+        if: |
+          github.event_name == 'push' &&
+          steps.changes.outputs.gateway != 'true' &&
+          steps.changes.outputs.member != 'true' &&
+          steps.changes.outputs.ordering != 'true' &&
+          steps.changes.outputs.product != 'true' &&
+          steps.changes.outputs.frontend != 'true'
+        run: |
+          echo "No service directory changed. Skip build & deploy."
+          exit 0
+
+      - name: Install yq
+        if: github.event_name == 'push'
+        run: |
+          sudo wget -O /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/download/v4.44.2/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          yq --version
+
+      # Gateway 빌드
+      - name: gateway build and push docker image to ecr
+        if: github.event_name == 'workflow_dispatch' || steps.changes.outputs.gateway == 'true'
+        env:
+          REPOSITORY: team3-apigateway
+          DOCKERFILE_PATH: ./msa/apigateway/Dockerfile
+          BUILD_CONTEXT: ./msa/apigateway
+        run: |
+          docker build \
+            -t ${ECR_REGISTRY}/${REPOSITORY}:${IMAGE_TAG} \
+            -f ${DOCKERFILE_PATH} ${BUILD_CONTEXT}
+
+          docker push ${ECR_REGISTRY}/${REPOSITORY}:${IMAGE_TAG}
+
+      # Member 빌드
+      - name: member build and push docker image to ecr
+        if: github.event_name == 'workflow_dispatch' || steps.changes.outputs.member == 'true'
+        env:
+          REPOSITORY: team3-member-service
+          DOCKERFILE_PATH: ./msa/member/Dockerfile
+          BUILD_CONTEXT: ./msa/member
+        run: |
+          docker build \
+            -t ${ECR_REGISTRY}/${REPOSITORY}:${IMAGE_TAG} \
+            -f ${DOCKERFILE_PATH} ${BUILD_CONTEXT}
+
+          docker push ${ECR_REGISTRY}/${REPOSITORY}:${IMAGE_TAG}
+
+      # Ordering 빌드
+      - name: order build and push docker image to ecr
+        if: github.event_name == 'workflow_dispatch' || steps.changes.outputs.ordering == 'true'
+        env:
+          REPOSITORY: team3-ordering-service
+          DOCKERFILE_PATH: ./msa/ordering/Dockerfile
+          BUILD_CONTEXT: ./msa/ordering
+        run: |
+          docker build \
+            -t ${ECR_REGISTRY}/${REPOSITORY}:${IMAGE_TAG} \
+            -f ${DOCKERFILE_PATH} ${BUILD_CONTEXT}
+
+          docker push ${ECR_REGISTRY}/${REPOSITORY}:${IMAGE_TAG}
+
+      # Product 빌드
+      - name: product build and push docker image to ecr
+        if: github.event_name == 'workflow_dispatch' || steps.changes.outputs.product == 'true'
+        env:
+          REPOSITORY: team3-product-service
+          DOCKERFILE_PATH: ./msa/product/Dockerfile
+          BUILD_CONTEXT: ./msa/product
+        run: |
+          docker build \
+            -t ${ECR_REGISTRY}/${REPOSITORY}:${IMAGE_TAG} \
+            -f ${DOCKERFILE_PATH} ${BUILD_CONTEXT}
+
+          docker push ${ECR_REGISTRY}/${REPOSITORY}:${IMAGE_TAG}
+
+      # Frontend 빌드
+      - name: frontend build and push docker image to ecr
+        if: github.event_name == 'workflow_dispatch' || steps.changes.outputs.frontend == 'true'
+        env:
+          REPOSITORY: team3-frontend-service
+          DOCKERFILE_PATH: ./msa/frontend/Dockerfile
+          BUILD_CONTEXT: ./msa/frontend
+        run: |
+          docker build \
+            -t ${ECR_REGISTRY}/${REPOSITORY}:${IMAGE_TAG} \
+            -f ${DOCKERFILE_PATH} ${BUILD_CONTEXT}
+
+          docker push ${ECR_REGISTRY}/${REPOSITORY}:${IMAGE_TAG}
+
+      # apigateway image tag 수정
+      - name: Update apigateway manifest
+        if: github.event_name == 'push' && steps.changes.outputs.gateway == 'true'
+        env:
+          FULL_IMAGE: ${{ env.ECR_REGISTRY }}/team3-apigateway:${{ env.IMAGE_TAG }}
+          FILE_PATH: ./msa/apigateway/k8s/depl_svc.yml
+        run: |
+          yq -i '
+            .spec.template.spec.containers[].image = strenv(FULL_IMAGE)
+          ' "${FILE_PATH}"
+
+      # member image tag 수정
+      - name: Update member manifest
+        if: github.event_name == 'push' && steps.changes.outputs.member == 'true'
+        env:
+          FULL_IMAGE: ${{ env.ECR_REGISTRY }}/team3-member-service:${{ env.IMAGE_TAG }}
+          FILE_PATH: ./msa/member/k8s/depl_svc.yml
+        run: |
+          yq -i '
+            .spec.template.spec.containers[].image = strenv(FULL_IMAGE)
+          ' "${FILE_PATH}"
+
+      # ordering image tag 수정
+      - name: Update ordering manifest
+        if: github.event_name == 'push' && steps.changes.outputs.ordering == 'true'
+        env:
+          FULL_IMAGE: ${{ env.ECR_REGISTRY }}/team3-ordering-service:${{ env.IMAGE_TAG }}
+          FILE_PATH: ./msa/ordering/k8s/depl_svc.yml
+        run: |
+          yq -i '
+            .spec.template.spec.containers[].image = strenv(FULL_IMAGE)
+          ' "${FILE_PATH}"
+
+      # product image tag 수정
+      - name: Update product manifest
+        if: github.event_name == 'push' && steps.changes.outputs.product == 'true'
+        env:
+          FULL_IMAGE: ${{ env.ECR_REGISTRY }}/team3-product-service:${{ env.IMAGE_TAG }}
+          FILE_PATH: ./msa/product/k8s/depl_svc.yml
+        run: |
+          yq -i '
+            .spec.template.spec.containers[].image = strenv(FULL_IMAGE)
+          ' "${FILE_PATH}"
+
+      # frontend image tag 수정
+      - name: Update frontend manifest
+        if: github.event_name == 'push' && steps.changes.outputs.frontend == 'true'
+        env:
+          FULL_IMAGE: ${{ env.ECR_REGISTRY }}/team3-frontend-service:${{ env.IMAGE_TAG }}
+          FILE_PATH: ./msa/frontend/k8s/depl_svc.yml
+        run: |
+          yq -i '
+            .spec.template.spec.containers[].image = strenv(FULL_IMAGE)
+          ' "${FILE_PATH}"
+
+      - name: Configure git identity
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "${{ vars.USER_NAME }}"
+          git config user.email "${{ vars.USER_EMAIL }}"
+
+      - name: Commit and push manifest changes
+        if: github.event_name == 'push'
+        run: |
+          git add ./msa/apigateway/k8s/depl_svc.yml \
+                  ./msa/member/k8s/depl_svc.yml \
+                  ./msa/ordering/k8s/depl_svc.yml \
+                  ./msa/product/k8s/depl_svc.yml \
+                  ./msa/frontend/k8s/depl_svc.yml
+
+          if git diff --cached --quiet; then
+            echo "No manifest changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: update image tags to ${IMAGE_TAG}"
+          git push origin "${BRANCH}"
