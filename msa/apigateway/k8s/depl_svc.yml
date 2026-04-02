@@ -7,19 +7,19 @@ spec:
   #replicas: 1
   selector:
     matchLabels:
-      app: apigateway 
+      app: apigateway
   template:
     metadata:
-      annotations: 
+      annotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: "/actuator/prometheus"
-        prometheus.io/port: "8080" 
+        prometheus.io/port: "8080"
       labels:
         app: apigateway
     spec:
       containers:
         - name: apigateway-container
-          image: 398875891485.dkr.ecr.ap-northeast-2.amazonaws.com/team3-apigateway:18b6547
+          image: 398875891485.dkr.ecr.ap-northeast-2.amazonaws.com/team3-apigateway:a6ecf8b
           ports:
             - containerPort: 8080
           resources:

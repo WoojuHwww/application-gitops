@@ -9,13 +9,13 @@ spec:
     matchLabels:
       app: frontend
   template:
-    metadata: 
+    metadata:
       labels:
         app: frontend
-    spec: 
+    spec:
       containers:
-        - name: frontend-container 
-          image: 398875891485.dkr.ecr.ap-northeast-2.amazonaws.com/team3-frontend-service:18b6547
+        - name: frontend-container
+          image: 398875891485.dkr.ecr.ap-northeast-2.amazonaws.com/team3-frontend-service:a6ecf8b
           ports:
             - containerPort: 80
 ---
