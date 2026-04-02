@@ -15,10 +15,10 @@ spec:
     spec:
       containers:
         - name: frontend-container
-          image: 398875891485.dkr.ecr.ap-northeast-2.amazonaws.com/team3-frontend-service:a6ecf8b
+          image: 398875891485.dkr.ecr.ap-northeast-2.amazonaws.com/team3-frontend-service:1ba6d2d
           ports:
             - containerPort: 80
---- 
+---
 apiVersion: v1
 kind: Service
 metadata:
