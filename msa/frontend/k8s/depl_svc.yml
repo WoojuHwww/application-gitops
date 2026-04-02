@@ -12,7 +12,7 @@ spec:
     metadata: 
       labels:
         app: frontend
-    spec:
+    spec: 
       containers:
         - name: frontend-container
           image: 398875891485.dkr.ecr.ap-northeast-2.amazonaws.com/team3-frontend-service:18b6547

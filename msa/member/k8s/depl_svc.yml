@@ -15,7 +15,7 @@ spec:
         prometheus.io/path: "/actuator/prometheus"
         prometheus.io/port: "8080" 
       labels:
-        app: member
+        app: member 
     spec:
       containers:
         - name: member-container

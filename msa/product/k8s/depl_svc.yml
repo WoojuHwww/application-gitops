@@ -16,7 +16,7 @@ spec:
         prometheus.io/port: "8080" 
       labels:
         app: product
-    spec:
+    spec: 
       containers:
         - name: product-container
           image: 398875891485.dkr.ecr.ap-northeast-2.amazonaws.com/team3-product-service:1ebc0bb
